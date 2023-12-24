@@ -1,0 +1,4 @@
+*.tar.gz
+
+ec-cube/.env
+ec-cube/var/
