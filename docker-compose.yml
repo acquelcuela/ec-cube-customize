@@ -1,0 +1,94 @@
+version: "3"
+
+networks:
+  backend:
+    driver: bridge
+
+volumes:
+  mysql-database:
+    driver: local
+  mailcatcher-data:
+    driver: local
+
+  ### ignore folder volume #####
+  var:
+    driver: local
+  vendor:
+    driver: local
+
+services:
+  ### ECCube4 ##################################
+  ec-cube:
+    build:
+      context: .
+      dockerfile: ./docker/docker-php/Dockerfile
+      # args:
+      #   XDEBUG_INSTALL: "${XDEBUG_INSTALL:-false}"
+    platform: linux/amd64
+    ports:
+      - "9000:9000"
+      - "4430:443"
+    volumes:
+      - "./ec-cube:/var/www/html:cached"
+      ### 同期対象からコストの重いフォルダを除外 #####################
+      - "./ec-cube/var:/var/www/html/var"
+      - "./ec-cube/vendor:/var/www/html/vendor"
+    environment:
+      - HOST_UID
+      # - XDEBUG_CLIENT_HOST
+      # - "XDEBUG_CLIENT_PORT=${XDEBUG_CLIENT_PORT:-9000}"
+      # - "XDEBUG_INSTALL=${XDEBUG_INSTALL:-false}"
+    depends_on:
+      - mysql
+    networks:
+      - backend
+  web:
+    build: ./docker/docker-nginx
+    ports:
+      - "${APP_PORT}:80"
+    depends_on:
+      - ec-cube
+      - mysql
+    volumes:
+      - ./ec-cube:/var/www/html
+      - ./docker/docker-nginx/default.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - backend
+  ### MySQL ##################################
+  mysql:
+    image: mysql:5.7
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: eccubedb
+      MYSQL_USER: dbuser
+      MYSQL_PASSWORD: secret
+    volumes:
+      - mysql-database:/var/lib/mysql
+    ports:
+      - 13306:3306
+    networks:
+      - backend
+
+  ### Mailcatcher ##################################
+  mailcatcher:
+    image: schickling/mailcatcher
+    ports:
+      - "1080:1080"
+      - "1025:1025"
+    networks:
+      - backend
+
+  ### phpMyAdmin
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    environment:
+      - PMA_ARBITRARY=1
+      - PMA_HOST=mysql
+      - PMA_USER=root
+      - PMA_PASSWORD=root
+    links:
+      - mysql
+    ports:
+      - 4040:80
+    networks:
+      - backend
