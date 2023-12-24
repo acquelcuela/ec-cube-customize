@@ -1,4 +1,6 @@
 *.tar.gz
+*.zip
+*.log
 
 ec-cube/.env
 ec-cube/var/
