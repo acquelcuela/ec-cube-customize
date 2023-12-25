@@ -1,6 +1,8 @@
 # ec-cube customize
 
 ## 動作確認
+* docker環境作成〜EC-CUBE初期設定から、issue #2 のカスタマイズ部分までを確認頂ける手順です
+
 1. 本リポジトリをclone
 1. docker-compose build --no-cache
 1. docker-compose up -d
